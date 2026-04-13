@@ -8,6 +8,10 @@
 -- 2. Extract numeric values using Regular Expressions.
 -- 3. Retrieve a specific "Dummy ICCID" using the sa.get_test_sim function.
 -- 4. Update the SIM inventory table, replacing the Dummy serial with the Real one.
+--
+-- USAGE: 
+-- Provide a 'part_number' in the config section to target a specific SKU.
+-- Leave 'part_number' NULL to auto-discover the first available SKU with a valid IMEI.
 *******************************************************************************/
 
 SET SERVEROUTPUT ON;
@@ -16,16 +20,39 @@ SET ECHO OFF;
 PROMPT >>> Starting BYOP Process - Generating Identifiers...
 
 DECLARE
-    -- [Configuration]
-    part_number    VARCHAR2 (50) := 'TOMTXT2513VCP';
-    sim_pn         VARCHAR2 (50) := 'TF256PSIMV975N';
+    -- ==========================================
+    -- [CONFIGURATION SECTION]
+    -- Edit these values to change the test context
+    -- ==========================================
+    part_number VARCHAR2 (50);                      -- Target device part number (can be null to auto-search)
+    sim_pn      VARCHAR2 (50) := 'TF256PSIMV975N'; -- Specific SIM card part number to use
     dummy_sim_pn   VARCHAR2 (50) := 'TF256PSIMV975TD'; -- Part Number for Dummy SIM
     
-    -- [Variables]
-    v_imei         VARCHAR2(100);
-    v_iccid        VARCHAR2(100);
-    v_dummy_iccid  VARCHAR2(200);
+    -- [INTERNAL VARIABLES]
+    v_imei         VARCHAR2(100);    -- Stores the extracted IMEI
+    v_iccid        VARCHAR2(100);    -- Stores the extracted ICCID
+    v_dummy_iccid  VARCHAR2(200);    -- Stores the extracted DUMMY ICCID
 BEGIN
+    -- [AUTO-DISCOVERY LOGIC]
+    -- If no part_number is provided, search the mapping table for the first valid one
+    IF part_number IS NULL THEN
+        FOR rec IN (SELECT DISTINCT part_number FROM itquser_data.dmd_partnum_sku_map)
+        LOOP
+
+            -- Attempt to fetch an IMEI for the current part number
+            v_imei  := itquser_data.GET_IMEI(rec.part_number);
+            -- Use Regex to pull only the numeric digits from the string format "IMEI=123..."
+            v_imei  := REGEXP_SUBSTR(v_imei, 'IMEI=(\d+)', 1, 1, 'i', 1);
+            
+            -- If a valid IMEI is found, lock this part_number and stop searching
+            IF v_imei IS NOT NULL THEN
+                part_number := rec.part_number;
+                DBMS_OUTPUT.PUT_LINE('Found IMEI for part number: ' || part_number);
+                EXIT;
+            END IF;
+        END LOOP;
+    END IF;
+    
     -- STEP 1: Generate Real Identifiers
     v_imei  := itquser_data.GET_IMEI(part_number);
     v_iccid := itquser_data.GET_ICCID(sim_pn);
