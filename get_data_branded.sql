@@ -17,7 +17,7 @@
 SET SERVEROUTPUT ON;
 SET ECHO OFF;
 
-PROMPT >>> Starting BYOP Process - Generating Identifiers...
+PROMPT >>> Starting Branded Process - Generating Identifiers...
 
 DECLARE
     -- ==========================================
