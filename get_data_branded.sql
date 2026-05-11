@@ -26,7 +26,8 @@ DECLARE
     -- ==========================================
     part_number VARCHAR2 (50);                      -- Target device part number (can be null to auto-search)
     sim_pn      VARCHAR2 (50) := 'TF256PSIMV975N'; -- Specific SIM card part number to use
-    test_env    VARCHAR2 (50) := 'UAT1';           -- The destination test environment tag
+    test_env    VARCHAR2 (50) := 'UAT1';           -- The destination test environment tag UAT1
+    brand       VARCHAR2 (50) := 'TO';             -- The brand abv, TO for Total Wireless or ST for Straight Talk
     
     -- [INTERNAL VARIABLES]
     v_imei      VARCHAR2(100);  -- Stores the extracted IMEI
@@ -37,7 +38,7 @@ BEGIN
     -- [AUTO-DISCOVERY LOGIC]
     -- If no part_number is provided, search the mapping table for the first valid one
     IF part_number IS NULL THEN
-        FOR rec IN (SELECT DISTINCT part_number FROM itquser_data.dmd_partnum_sku_map)
+        FOR rec IN (SELECT DISTINCT part_number FROM itquser_data.dmd_partnum_sku_map WHERE PART_NUMBER LIKE '%' || brand || 'API%')
         LOOP
 
             -- Attempt to fetch an IMEI for the current part number
