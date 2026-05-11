@@ -1,3 +1,6 @@
 oracledb
 ipykernel
 python-dotenv 
+pandas
+openpyxl
+jira
